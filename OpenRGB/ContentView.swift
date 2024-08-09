@@ -11,15 +11,15 @@ import SwiftData
 struct ContentView: View {
     @Environment(\.modelContext) private var modelContext
     @Query private var items: [Item]
-
+    @State private var selection: Item?
     var body: some View {
         NavigationSplitView {
-            List {
+            List (selection: $selection) {
                 ForEach(items) { item in
                     NavigationLink {
-                        Text("Item at \(item.timestamp, format: Date.FormatStyle(date: .numeric, time: .standard))")
+                        Text(item.ip)
                     } label: {
-                        Text(item.timestamp, format: Date.FormatStyle(date: .numeric, time: .standard))
+                        Text(item.name)
                     }
                 }
                 .onDelete(perform: deleteItems)
@@ -34,7 +34,12 @@ struct ContentView: View {
                 }
 #endif
                 ToolbarItem {
-                    Button(action: addItem) {
+                    Button(action: {deleteItem()}) {
+                        Label("Delete", systemImage: "bin")
+                    }
+                }
+                ToolbarItem {
+                    Button(action: {addItem(ip: "192.168.1.90", name: "BigBox")}) {
                         Label("Add Item", systemImage: "plus")
                     }
                 }
@@ -44,13 +49,27 @@ struct ContentView: View {
         }
     }
 
-    private func addItem() {
+    private func addItem(ip: String, name: String = "") {
+        var name_: String
+        
+        if name == "" {
+            name_ = ip
+        }
+        else {
+            name_ = name
+        }
         withAnimation {
-            let newItem = Item(timestamp: Date())
+            let newItem = Item(ip: ip, name: name_)
             modelContext.insert(newItem)
         }
     }
 
+    private func deleteItem() {
+        withAnimation {
+            modelContext.delete(items.firstIndex(of: selection))
+        }
+    }
+    
     private func deleteItems(offsets: IndexSet) {
         withAnimation {
             for index in offsets {
@@ -60,7 +79,7 @@ struct ContentView: View {
     }
 }
 
-#Preview {
-    ContentView()
-        .modelContainer(for: Item.self, inMemory: true)
-}
+//#Preview {
+//    ContentView()
+//        .modelContainer(for: Item.self, inMemory: true)
+//}
