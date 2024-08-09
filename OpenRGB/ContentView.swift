@@ -12,6 +12,13 @@ struct ContentView: View {
     @Environment(\.modelContext) private var modelContext
     @Query private var items: [Item]
     @State private var selection: Item?
+    
+    @State var ip: String = "192.168.1."
+    @State var name: String = ""
+    @State var port: String = "6472"
+    
+    @State var adding: Bool = false
+
     var body: some View {
         NavigationSplitView {
             List (selection: $selection) {
@@ -20,7 +27,19 @@ struct ContentView: View {
                         Text(item.ip)
                     } label: {
                         Text(item.name)
+                    }.swipeActions {
+                        Button("Delete", systemImage: "trash", role: .destructive) {
+                            modelContext.delete(item)
+                        }
                     }
+                    .contextMenu {
+                        Button {
+                            modelContext.delete(item)
+                        } label: {
+                            Label("Delete", systemImage: "trash")
+                        }
+                    }
+
                 }
                 .onDelete(perform: deleteItems)
             }
@@ -34,22 +53,29 @@ struct ContentView: View {
                 }
 #endif
                 ToolbarItem {
-                    Button(action: {deleteItem()}) {
-                        Label("Delete", systemImage: "bin")
+                    Button(action: {adding=true}, label: {Label("Add Item", systemImage: "plus")} )
+                    .confirmationDialog("Add Item", isPresented: $adding) {
+                        TextField("IP", text: $ip)
+                        TextField("Name", text: $name)
+                        TextField("Port", text: $port)
+                        Button("OK", action: addItem)
+                        Button("Cancel", role: .cancel) { }
                     }
-                }
-                ToolbarItem {
-                    Button(action: {addItem(ip: "192.168.1.90", name: "BigBox")}) {
-                        Label("Add Item", systemImage: "plus")
+                    message: {
+                        Text("Enter server details.")
                     }
                 }
             }
         } detail: {
-            Text("Select an item")
+            Text("Welcome! Select a server")
         }
     }
 
-    private func addItem(ip: String, name: String = "") {
+    private func addItem() {
+        name = $name.wrappedValue
+        ip = $ip.wrappedValue
+        port = $port.wrappedValue
+        
         var name_: String
         
         if name == "" {
@@ -64,9 +90,9 @@ struct ContentView: View {
         }
     }
 
-    private func deleteItem() {
+    private func deleteItem(toDelete: Item) {
         withAnimation {
-            modelContext.delete(items.firstIndex(of: selection))
+            modelContext.delete(toDelete)
         }
     }
     
@@ -78,8 +104,3 @@ struct ContentView: View {
         }
     }
 }
-
-//#Preview {
-//    ContentView()
-//        .modelContainer(for: Item.self, inMemory: true)
-//}
